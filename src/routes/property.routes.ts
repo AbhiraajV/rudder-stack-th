@@ -37,7 +37,7 @@ const router = Router();
  *                 type: string
  *               type:
  *                 type: string
- *                 enum: [string, number, boolean, array, object]
+ *                 enum: [string, number, boolean]
  *               description:
  *                 type: string
  *     responses:
@@ -112,6 +112,8 @@ router.get('/', listProperties);
  *                 type: string
  *               type:
  *                 type: string
+ *                 enum: [string, number, boolean]
+ * 
  *               description:
  *                 type: string
  *     responses:
