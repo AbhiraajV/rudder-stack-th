@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../prisma/prisma';
 
-import { nanoid } from 'nanoid';
-
+async function generateId() {
+  const { nanoid } = await import('nanoid');
+  return nanoid(32);
+}
 
 type CreateUserBody = {
   name?: string;
@@ -73,7 +75,7 @@ export const verifyOtp = async (req: Request<{},{},VerifyOtp>, res: Response) =>
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const key = nanoid(32);
+  const key = await generateId();
   const apiKey = await prisma.apiKey.create({
     data: {
       key,

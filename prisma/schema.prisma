@@ -83,7 +83,7 @@ model Property {
   trackingPlanEventProperties TrackingPlanEventProperty[]
 
   @@unique([name, type, userId])
-  @@index([userId])
+  @@index([userId,name])
 }
 
 model TrackingPlan {
@@ -99,6 +99,8 @@ model TrackingPlan {
 
   @@unique([name, userId])
   @@index([userId])
+  @@index([name,userId])
+
 }
 
 model TrackingPlanEvent {
@@ -114,6 +116,7 @@ model TrackingPlanEvent {
   properties           TrackingPlanEventProperty[]
 
   @@unique([trackingPlanId, eventId])
+  @@index([trackingPlanId, eventId])
 }
 
 model TrackingPlanEventProperty {
@@ -127,4 +130,5 @@ model TrackingPlanEventProperty {
   updatedAt            DateTime             @updatedAt
 
   @@unique([trackingPlanEventId, propertyId])
+  @@index([trackingPlanEventId, propertyId])
 }
