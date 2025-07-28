@@ -1,9 +1,130 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum EventType {
+  track
+  identify
+  alias
+  screen
+  page
+}
+
+enum PropertyType {
+  string
+  number
+  boolean
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  apiKeys   ApiKey[]
+  events    Event[]
+  properties Property[]
+  trackingPlans TrackingPlan[]
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  revoked   Boolean  @default(false)
+
+  @@unique([userId,key])
+}
+
+model Event {
+  id          String     @id @default(cuid())
+  name        String
+  type        EventType
+  description String
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  trackingPlanEvents TrackingPlanEvent[]
+
+  @@unique([name, type, userId])
+  @@index([userId])
+}
+
+model Property {
+  id        String         @id @default(cuid())
+  name      String
+  type      PropertyType
+  description String
+  validation Json?
+  userId    String
+  user      User           @relation(fields: [userId], references: [id])
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  trackingPlanEventProperties TrackingPlanEventProperty[]
+
+  @@unique([name, type, userId])
+  @@index([userId])
+}
+
+model TrackingPlan {
+  id          String               @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  user        User                 @relation(fields: [userId], references: [id])
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  events      TrackingPlanEvent[]
+
+  @@unique([name, userId])
+  @@index([userId])
+}
+
+model TrackingPlanEvent {
+  id                   String               @id @default(cuid())
+  trackingPlan         TrackingPlan         @relation(fields: [trackingPlanId], references: [id])
+  trackingPlanId       String
+  event                Event                @relation(fields: [eventId], references: [id])
+  eventId              String
+  additionalProperties Boolean              @default(false)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  properties           TrackingPlanEventProperty[]
+
+  @@unique([trackingPlanId, eventId])
+}
+
+model TrackingPlanEventProperty {
+  id                   String               @id @default(cuid())
+  trackingPlanEvent    TrackingPlanEvent    @relation(fields: [trackingPlanEventId], references: [id])
+  trackingPlanEventId  String
+  property             Property             @relation(fields: [propertyId], references: [id])
+  propertyId           String
+  required             Boolean              @default(false)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@unique([trackingPlanEventId, propertyId])
 }
