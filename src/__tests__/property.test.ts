@@ -1,15 +1,26 @@
 import supertest from "supertest";
 import { createAppServer } from "../server";
 import { resetDatabase } from "./helper";
+import { prisma } from "../../prisma/prisma";
 
 const app = createAppServer();
 const request = supertest(app);
 const API_KEY = "LjtmooBZekGnHubR8QTQPDuEQUR1g_iV";
 
 describe("Property API", () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  });
+  beforeAll(async () => {
+      await resetDatabase();
+    });
+   beforeEach(async () => {
+      await resetDatabase();
+    });
+
+    afterAll(async () => {
+      await resetDatabase();
+      await prisma.$disconnect();
+    });
+  
+  
 
   describe("POST /api/property", () => {
     it("should create a property", async () => {

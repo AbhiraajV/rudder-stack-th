@@ -24,7 +24,7 @@ services:
       - db
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/mydb
-    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run build && node dist/app.js"
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npx prisma db push && npm run build && node dist/app.js"
 
 volumes:
   db_data:

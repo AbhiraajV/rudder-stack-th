@@ -6,15 +6,19 @@ const app = createAppServer();
 describe('POST /api/tracking-plan/create-by-object', () => {
   let apiKey: string;
 
+  apiKey = "LjtmooBZekGnHubR8QTQPDuEQUR1g_iV";
   beforeAll(async () => {
-    await resetDatabase();
-      apiKey = "LjtmooBZekGnHubR8QTQPDuEQUR1g_iV";
-  });
+      await resetDatabase();
+    });
+   beforeEach(async () => {
+      await resetDatabase();
+    });
 
-  afterAll(async () => {
-    await resetDatabase();
-    await prisma.$disconnect();
-  });
+    afterAll(async () => {
+      await resetDatabase();
+      await prisma.$disconnect();
+    });
+  
 
   it('should create a new tracking plan with nested events and properties', async () => {
     const res = await request(app)

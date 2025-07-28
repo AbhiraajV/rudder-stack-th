@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../prisma/prisma';
+export function generateApiKey(): string {
+  const timestamp = new Date().toISOString(); // e.g., 2025-07-28T22:13:54.123Z
+  const compactTime = timestamp.replace(/[-:.TZ]/g, ''); // e.g., 20250728T221354123
+  const randomSuffix = Math.random().toString(36).substring(2, 8); // 6 random chars
 
-async function generateId() {
-  const { nanoid } = await import('nanoid');
-  return nanoid(32);
+  return `api_${compactTime}_${randomSuffix}`;
 }
-
 type CreateUserBody = {
   name?: string;
   email: string;
@@ -75,7 +76,7 @@ export const verifyOtp = async (req: Request<{},{},VerifyOtp>, res: Response) =>
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const key = await generateId();
+  const key = generateApiKey();
   const apiKey = await prisma.apiKey.create({
     data: {
       key,

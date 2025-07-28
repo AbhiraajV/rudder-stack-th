@@ -8,7 +8,7 @@
     "start": "node dist/app.js",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/app.ts",
     "lint": "eslint 'src/**/*.ts'",
-    "test":"jest"
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",
-    "nanoid": "^5.1.5",
+    "nanoid": "^3.3.4",
     "prisma": "^6.12.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",

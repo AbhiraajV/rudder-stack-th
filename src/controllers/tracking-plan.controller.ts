@@ -204,24 +204,27 @@ export const createTrackingPlanByObject = async (
           let propertyId: string;
 
           if (existingProperty) {
-            if (existingProperty.description !== propertyInput.description) {
+            const normalize = (str: string) => str.trim().replace(/\s+/g, " ");
+            if (normalize(existingProperty.description) !== normalize(propertyInput.description)) {
               throw new Error(
                 `Property "${propertyInput.name}" of type "${propertyInput.type}" already exists with a different description.`
               );
             }
-            const existingTracking = await tx.trackingPlanEventProperty.findFirst({
+
+            const conflictingTracking = await tx.trackingPlanEventProperty.findFirst({
               where: {
                 propertyId: existingProperty.id,
-                trackingPlanEventId: trackingPlanEvent.id,
+                required: {
+                  not: propertyInput.required,
+                },
               },
             });
 
-            if (existingTracking && existingTracking.required !== propertyInput.required) {
+            if (conflictingTracking) {
               throw new Error(
                 `Property "${propertyInput.name}" has conflicting "required" values across events.`
               );
             }
-
             propertyId = existingProperty.id;
           } else {
             const newProperty = await tx.property.create({

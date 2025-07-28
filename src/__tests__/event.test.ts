@@ -1,35 +1,49 @@
-import supertest from 'supertest';
-import { createAppServer } from '../server';
-import { prisma } from '../../prisma/prisma';
-import { resetDatabase } from './helper';
-
+import supertest from "supertest";
+import { resetDatabase } from "./helper";
+import { createAppServer } from "../server";
+import { prisma } from "../../prisma/prisma";
+const apiKey = 'LjtmooBZekGnHubR8QTQPDuEQUR1g_iV'
 const app = createAppServer();
-const apiKey = 'LjtmooBZekGnHubR8QTQPDuEQUR1g_iV';
-
 describe('Event API', () => {
   let createdEventId: string;
-  beforeAll(async ()=>{
-    await resetDatabase();
 
-  })
-  afterAll(async () => {
+  beforeAll(async () => {
     await resetDatabase();
-    await prisma.$disconnect();
   });
 
-  it('POST /api/events - should create an event', async () => {
+  beforeEach(async () => {
+    await resetDatabase();
+
     const res = await supertest(app)
       .post('/api/events')
       .set('x-api-key', apiKey)
       .send({
         name: 'user_signed_up',
         description: 'Fires when user signs up',
-        type:"track"
+        type: 'track',
+      });
+
+    createdEventId = res.body.id;
+  });
+
+  afterAll(async () => {
+    await resetDatabase();
+    await prisma.$disconnect();
+  });
+
+  it('POST /api/events - should create an event', async () => {
+    // No need to test again here; covered in beforeEach, but optional:
+    const res = await supertest(app)
+      .post('/api/events')
+      .set('x-api-key', apiKey)
+      .send({
+        name: 'user_logged_in',
+        description: 'Fires when user logs in',
+        type: 'track',
       });
 
     expect(res.status).toBe(201);
     expect(res.body.id).toBeDefined();
-    createdEventId = res.body.id;
   });
 
   it('GET /api/events/:id - should fetch the created event', async () => {
