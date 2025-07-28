@@ -14,7 +14,7 @@ This is a Node.js API service built with TypeScript, Express, and Prisma that al
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/data-catalog-api.git
+git clone https://github.com/AbhiraajV/rudder-stack-th.git
 cd data-catalog-api
 ```
 
