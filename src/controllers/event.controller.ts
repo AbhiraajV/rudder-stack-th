@@ -1,31 +1,34 @@
-import { Request, Response } from 'express';
-import { Event, Prisma } from '@prisma/client';
+import {  Request, Response } from 'express';
+import {  EventType, Prisma } from '@prisma/client';
 import { prisma } from '../../prisma/prisma';
-import { AuthRequest } from '../types/authReq';
-type EventDetails = Pick<Event,'description' | 'name' | 'type'>
-export const createEvent = async (req: AuthRequest<{},{},EventDetails>, res: Response) => {
-  const { name, type, description } = req.body;
+import { EventDetails, eventSchema, updateEventSchema } from '../validators/event.validator';
+
+export const createEvent = async (req: Request<{}, {}, EventDetails>, res: Response) => {
+  const parsed = eventSchema.safeParse(req.body);
   const userId = req.user?.id;
 
-  if (!name || !type || !userId || !description) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  if (!parsed.success || !userId) {
+    return res.status(400).json({ error: "Invalid input", details: parsed.error?.format?.() || "Missing userId" });
   }
+
+  const { name, type, description } = parsed.data;
 
   try {
     const event = await prisma.event.create({
-      data: {
-        name,
-        type,
-        description,
-        userId,
-      },
+      data: { name, type, description, userId },
     });
     return res.status(201).json(event);
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch events', details: (error as Prisma.PrismaClientInitializationError).message });
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        return res.status(409).json({ error: 'Event with the same name and type already exists' });
+      }
+    }
+    return res.status(500).json({ error: 'Failed to create event', details: error.message });
   }
 };
-export const getAllEvents = async (req: AuthRequest, res: Response) => {
+
+export const getAllEvents = async (req: Request, res: Response) => {
   const userId = req.user?.id;
 
   try {
@@ -38,7 +41,7 @@ export const getAllEvents = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getEventById = async (req: AuthRequest<{id:string}>, res: Response) => {
+export const getEventById = async (req: Request<{ id: string }>, res: Response) => {
   const { id } = req.params;
   const userId = req.user?.id;
 
@@ -53,10 +56,14 @@ export const getEventById = async (req: AuthRequest<{id:string}>, res: Response)
   }
 };
 
-export const updateEvent = async (req: AuthRequest<{id:string},{},EventDetails>, res: Response) => {
+export const updateEvent = async (req: Request<{ id: string }, {}, Partial<EventDetails>>, res: Response) => {
   const { id } = req.params;
-  const { name, type, description } = req.body;
+  const parsed = updateEventSchema.safeParse(req.body);
   const userId = req.user?.id;
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid input", details: parsed.error.format() });
+  }
 
   try {
     const existing = await prisma.event.findFirst({ where: { id, userId } });
@@ -64,14 +71,18 @@ export const updateEvent = async (req: AuthRequest<{id:string},{},EventDetails>,
 
     const updated = await prisma.event.update({
       where: { id },
-      data: { name, type, description },
+      data: parsed.data,
     });
     return res.json(updated);
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to update event', details: error });
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(409).json({ error: 'Duplicate event name and type' });
+    }
+    return res.status(500).json({ error: 'Failed to update event', details: error.message });
   }
 };
-export const deleteEvent = async (req: AuthRequest<{id:string}>, res: Response) => {
+
+export const deleteEvent = async (req: Request<{ id: string }>, res: Response) => {
   const { id } = req.params;
   const userId = req.user?.id;
 
