@@ -154,45 +154,72 @@ export const createTrackingPlanByObject = async (
       });
 
 
-      for (const eventInput of data.events) {
-        const existingEvent = await tx.event.findFirst({
-          where: {
-            name: eventInput.name,
-            type: eventInput.type ?? undefined,
-            userId,
-          },
-        });
+      for (const {type,name,description,properties,additionalProperties} of data.events) {
+        const existingEvents = await tx.event.findMany({
+    where: type
+      ? { name, type, userId }
+      : { name, userId },
+  });
 
-        let eventId: string;
+  let eventId: string;
 
-        if (existingEvent) {
-          if (existingEvent.description !== eventInput.description) {
+  if (existingEvents.length > 1 && !type) {
+    throw new Error(
+      `Event "${name}" exists with multiple types. Please specify the type.`
+    );
+  }
+
+        if (existingEvents.length === 1 && !type) {
+          // 1 event without a type specified
+          eventId = existingEvents[0].id;
+        } else if (type) {
+          // multiple events: we have to find the valid event name-type combo
+        const exactMatch = existingEvents.find(
+          (e) => e.name === name && e.type === type
+        );
+
+        if (exactMatch) {
+          if (exactMatch.description.trim() !== description.trim()) {
             throw new Error(
-              `Event "${eventInput.name}" already exists with a different description.`
+              `Event "${name}" with type "${type}" already exists with a different description.`
             );
           }
-          eventId = existingEvent.id;
+          eventId = exactMatch.id;
         } else {
           const newEvent = await tx.event.create({
             data: {
-              name: eventInput.name,
-              type: eventInput.type ?? 'track',
-              description: eventInput.description,
+              name,
+              type,
+              description,
               userId,
             },
           });
           eventId = newEvent.id;
         }
-
-        const trackingPlanEvent = await tx.trackingPlanEvent.create({
+      } else if (existingEvents.length === 0 && !type) {
+        // if no existing events and type is not specified: default to trrakc
+        const newEvent = await tx.event.create({
           data: {
-            trackingPlanId: trackingPlan.id,
-            eventId,
-            additionalProperties: eventInput.additionalProperties,
+            name,
+            type: 'track',
+            description,
+            userId,
           },
         });
+        eventId = newEvent.id;
+      } else {
+        throw new Error(`multiple events with multiple types for "${name}". Please mention a valid type`);
+      }
 
-        for (const propertyInput of eventInput.properties) {
+      const trackingPlanEvent = await tx.trackingPlanEvent.create({
+        data: {
+          trackingPlanId: trackingPlan.id,
+          eventId,
+          additionalProperties: additionalProperties,
+        },
+      });
+
+        for (const propertyInput of properties) {
           const existingProperty = await tx.property.findFirst({
             where: {
               name: propertyInput.name,
